@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-test
+  name: nginx-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-test
+  template:
+    metadata:
+      labels:
+        app: nginx-test
+    spec:
+      containers:
+      - image: nginx
+        name: nginx-test
+        ports:
+          - containerPort: 80
+            name: http
+            protocol: TCP
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-test
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: nginx-test
+---
+
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: empty
+  namespace: metallb-system
+---
+
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: example
+  namespace: metallb-system
+spec:
+  addresses:
+  - 172.19.254.200-172.19.254.250
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  name: myhost
+spec:
+  rules:
+  - host: myhost.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: nginx-test
+            port:
+              number: 80
+        path: /
+        pathType: ImplementationSpecific
+---
